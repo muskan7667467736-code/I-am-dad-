@@ -13,37 +13,51 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 60
 
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Check Java
+        run: |
+          echo "JAVA_HOME=$JAVA_HOME"
+          java -version
 
       - name: Install Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            git zip unzip openjdk-17-jdk \
-            python3-pip python3-dev build-essential \
-            libffi-dev libssl-dev
+            git zip unzip python3-pip python3-dev \
+            build-essential libffi-dev libssl-dev
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Accept SDK Licenses
+      - name: Setup Android SDK Manually
         run: |
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
+          java -version
+          sdkmanager --version
           yes | sdkmanager --licenses
-          sdkmanager "build-tools;37.0.0" "platform-tools"
+          sdkmanager --install "platform-tools" "build-tools;37.0.0"
 
       - name: Prepare Buildozer SDK
         run: |
           mkdir -p "$HOME/.buildozer/android/platform"
-          ln -s "$ANDROID_HOME" \
+          ln -sfn "$ANDROID_HOME" \
             "$HOME/.buildozer/android/platform/android-sdk"
 
       - name: Install Buildozer
         run: |
           python3 -m pip install --user --upgrade pip
           python3 -m pip install --user \
-            --upgrade buildozer cython==0.29.33
+            buildozer cython==0.29.33
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Build APK
