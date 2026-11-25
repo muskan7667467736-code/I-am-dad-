@@ -1,0 +1,33 @@
+name: Build I AM DAD APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip openjdk-17-jdk python3-pip python3-dev build-essential libffi-dev libssl-dev
+
+      - name: Install Buildozer
+        run: |
+          python3 -m pip install --user --break-system-packages --upgrade buildozer cython==0.29.33
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Build APK
+        run: buildozer android debug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: I-AM-DAD-APK
+          path: bin/*.apk
+          if-no-files-found: error
