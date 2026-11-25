@@ -1,4 +1,6 @@
-name: Build I AM DAD APK
+
+
+name: Build Android APK
 
 on:
   workflow_dispatch:
@@ -9,17 +11,44 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
+    timeout-minutes: 60
 
-      - name: Install dependencies
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git zip unzip openjdk-17-jdk python3-pip python3-dev build-essential libffi-dev libssl-dev
+          sudo apt-get install -y \
+            git zip unzip python3-pip python3-dev \
+            build-essential libffi-dev libssl-dev
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept SDK Licenses
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager "build-tools;37.0.0" "platform-tools"
+
+      - name: Prepare Buildozer SDK
+        run: |
+          mkdir -p "$HOME/.buildozer/android/platform"
+          ln -s "$ANDROID_HOME" \
+            "$HOME/.buildozer/android/platform/android-sdk"
 
       - name: Install Buildozer
         run: |
-          python3 -m pip install --user --break-system-packages --upgrade buildozer cython==0.29.33
+          python3 -m pip install --user --upgrade pip
+          python3 -m pip install --user \
+            --upgrade buildozer cython==0.29.33
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Build APK
